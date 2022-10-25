@@ -6,6 +6,7 @@ enable_testing()
 
 add_subdirectory(learn-metal/00-window)
 add_subdirectory(learn-metal/01-primitive)
+add_subdirectory(learn-metal/09-compute-to-render)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
