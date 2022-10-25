@@ -1,3 +1,17 @@
 .DS_Store
 LearnMetalCPP.xcodeproj/project.xcworkspace/xcuserdata/blake.xcuserdatad/UserInterfaceState.xcuserstate
+build
+
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+*.cmake
 
