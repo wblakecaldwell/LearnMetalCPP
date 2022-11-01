@@ -21,12 +21,55 @@
 #define MTL_PRIVATE_IMPLEMENTATION
 #define MTK_PRIVATE_IMPLEMENTATION
 #define CA_PRIVATE_IMPLEMENTATION
+#include <iostream>
+#include <string>
+#include <chrono>
 #include <Metal/Metal.hpp>
 #include <AppKit/AppKit.hpp>
 #include <MetalKit/MetalKit.hpp>
 
 #include <simd/simd.h>
 
+#pragma region CastPlay {
+
+class ThreePointer
+{
+    public:
+        ThreePointer(const int a, const int b, const int c) : _a{ a }, _b{ b }, _c{ c } 
+        {
+        }
+
+        std::string String() 
+        {
+            return "a: " + std::to_string(_a) + "; b: " + std::to_string(_b) + "; c: " + std::to_string(_c);
+        }
+
+    private:
+        int _a;
+        int _b;
+        int _c;
+};
+
+class FourPointer
+{
+    public:
+        FourPointer(const int a, const int b, const int c, const int d) : _a{ a }, _b{ b }, _c{ c }, _d{ d }
+        {
+        }
+
+        std::string String() 
+        {
+            return "a: " + std::to_string(_a) + "; b: " + std::to_string(_b) + "; c: " + std::to_string(_c) + "; d: " + std::to_string(_d);
+        }
+
+    private:
+        int _a;
+        int _b;
+        int _c;
+        int _d;
+};
+
+#pragma endregion CastPlay }
 
 #pragma region Declarations {
 
@@ -36,10 +79,11 @@ class Renderer
         Renderer( MTL::Device* pDevice );
         ~Renderer();
         void buildShaders();
-        void buildBuffers();
+        void buildBuffers(int inc);
         void draw( MTK::View* pView );
 
     private:
+        int _start_time_sec;
         MTL::Device* _pDevice;
         MTL::CommandQueue* _pCommandQueue;
         MTL::RenderPipelineState* _pPSO;
@@ -158,6 +202,16 @@ void MyAppDelegate::applicationWillFinishLaunching( NS::Notification* pNotificat
 
 void MyAppDelegate::applicationDidFinishLaunching( NS::Notification* pNotification )
 {
+    auto three_pointer = ThreePointer(1, 2, 3);
+    auto four_pointer = FourPointer(1, 2, 3, 4);
+
+    std::cout << "ThreePointer: " << three_pointer.String() << std::endl;
+    std::cout << "FourPointer: " << four_pointer.String() << std::endl;
+
+    auto four_ptr = &four_pointer;
+    auto four_as_three_ptr = reinterpret_cast<ThreePointer*>(four_ptr);
+    std::cout << "reinterpret_cast<ThreePointer*>(four_ptr): " << four_as_three_ptr->String() << std::endl;
+
     CGRect frame = (CGRect){ {100.0, 100.0}, {512.0, 512.0} };
 
     _pWindow = NS::Window::alloc()->init(
@@ -220,9 +274,12 @@ void MyMTKViewDelegate::drawInMTKView( MTK::View* pView )
 Renderer::Renderer( MTL::Device* pDevice )
 : _pDevice( pDevice->retain() )
 {
+    const auto p1 = std::chrono::system_clock::now();
+    _start_time_sec = (int)(std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count());
+
     _pCommandQueue = _pDevice->newCommandQueue();
     buildShaders();
-    buildBuffers();
+    buildBuffers(0);
 }
 
 Renderer::~Renderer()
@@ -293,10 +350,11 @@ void Renderer::buildShaders()
     pLibrary->release();
 }
 
-void Renderer::buildBuffers()
+void Renderer::buildBuffers(int inc)
 {
-    const size_t NumVertices = 3;
+    std::cout << "buildBuffers" << std::endl;
 
+    const size_t NumVertices = 3;
     simd::float3 positions[NumVertices] =
     {
         { -0.8f,  0.8f, 0.0f },
@@ -304,11 +362,12 @@ void Renderer::buildBuffers()
         { +0.8f,  0.8f, 0.0f }
     };
 
-    simd::float3 colors[NumVertices] =
+    float adder = inc * 0.01;
+    simd::float3 colors[3] =
     {
-        {  1.0, 0.3f, 0.2f },
-        {  0.8f, 1.0, 0.0f },
-        {  0.8f, 0.0f, 1.0 }
+        {  static_cast<float>(1.0f + adder), static_cast<float>(0.3f + adder), static_cast<float>(0.2f + adder) },
+        {  static_cast<float>(0.8f + adder), static_cast<float>(1.0f + adder), static_cast<float>(0.0f + adder) },
+        {  static_cast<float>(0.8f + adder), static_cast<float>(0.0f + adder), static_cast<float>(1.0f + adder) }
     };
 
     const size_t positionsDataSize = NumVertices * sizeof( simd::float3 );
@@ -329,6 +388,11 @@ void Renderer::buildBuffers()
 
 void Renderer::draw( MTK::View* pView )
 {
+    const auto p1 = std::chrono::system_clock::now();
+    int offset = (int)(std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count()) - _start_time_sec;
+    offset *= 5;
+    std::cout << "offset: " << offset << std::endl;
+    buildBuffers(offset);
     NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
 
     MTL::CommandBuffer* pCmd = _pCommandQueue->commandBuffer();
